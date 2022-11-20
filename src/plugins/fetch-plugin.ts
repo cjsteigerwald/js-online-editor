@@ -23,17 +23,32 @@ export const fetchPlugin = (inputCode: string) => {
 
         // Check to see if already fetched this package and if
         // in in cache
-        const cachedResult = await fileCache.getItem<esbuild.OnLoadResult>(args.path);
+        // const cachedResult = await fileCache.getItem<esbuild.OnLoadResult>(args.path);
 
-        if (cachedResult) {
-          return cachedResult;
-        }
+        // if (cachedResult) {
+        //   return cachedResult;
+        // }
 
         const { data, request} = await axios.get(args.path)
+
+        const fileType = args.path.match(/.css$/) ? 'css' : 'jsx';
+
+        const escaped = data
+          .replace(/\n/g, '')
+          .replace(/"/g, '\\"')
+          .replace(/'/g, "\\'");
+
+        const contents = fileType === 'css' ? 
+        `
+          const style = document.createElement('style')
+          style.innerText = '${escaped}';
+          document.head.appendChild(style);
+        ` : data
+
         // store response in cache
         const result: esbuild.OnLoadResult = {
           loader: 'jsx',
-          contents: data,
+          contents: contents,
           resolveDir: new URL('./', request.responseURL).pathname
         }
         // store in cache
